@@ -3,11 +3,6 @@ const WORKER_URL = import.meta.env.VITE_SCORECARD_WORKER_URL || '';
 
 export interface ScorecardStats {
   score: number;
-  birdies: number;
-  pars: number;
-  bogeys: number;
-  doubleBogeys: number;
-  holesPlayed: number;
 }
 
 export interface ParseResult {

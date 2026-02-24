@@ -197,6 +197,8 @@ export function RoundScreen() {
         if (parsed.success && parsed.stats) {
           setScoreFromOCR(parsed.stats.score);
           setScoreValue(parsed.stats.score);
+        } else if (!parsed.success) {
+          setError(`OCR couldn't read score: ${parsed.error || 'unknown error'}. Adjust manually.`);
         }
       }
     } catch (err) {
