@@ -154,21 +154,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSigningIn(true);
     setError('');
     try {
-      let { data, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+      let sessionUser: User | null = null;
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
       if (signInErr) {
         // Account doesn't exist yet — sign up
         const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email, password });
         if (signUpErr) throw signUpErr;
-        data = signUpData;
+        sessionUser = signUpData.user;
+      } else {
+        sessionUser = signInData.user;
       }
-      if (data.user) {
+      if (sessionUser) {
         await supabase.from('profiles').upsert({
-          id: data.user.id,
+          id: sessionUser.id,
           discord_id: null,
           discord_username: displayName,
           discord_avatar: null,
         }, { onConflict: 'id' });
-        await fetchProfile(data.user.id);
+        await fetchProfile(sessionUser.id);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
