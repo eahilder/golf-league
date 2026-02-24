@@ -9,6 +9,7 @@ import { AdminScreen } from '@/pages/AdminScreen';
 import { SeasonStandingsScreen } from '@/pages/SeasonStandingsScreen';
 import { ProfileScreen } from '@/pages/ProfileScreen';
 import { FriendsScreen } from '@/pages/FriendsScreen';
+import { useUpdater } from '@/hooks/useUpdater';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -49,12 +50,36 @@ function AppRoutes() {
   );
 }
 
+function UpdateBanner() {
+  const { update, installing, installUpdate, dismiss } = useUpdater();
+  if (!update) return null;
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-4 py-3 bg-[var(--color-primary)] text-black text-sm font-medium">
+      <span>Update {update.version} available</span>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={installUpdate}
+          disabled={installing}
+          className="px-3 py-1 bg-black text-[var(--color-primary)] rounded font-semibold text-xs disabled:opacity-60"
+        >
+          {installing ? 'Installing...' : 'Install & Restart'}
+        </button>
+        <button onClick={dismiss} className="opacity-70 hover:opacity-100 text-xs">
+          Later
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <div className="h-full w-full overflow-hidden bg-[var(--color-background)]">
           <AppRoutes />
+          <UpdateBanner />
         </div>
       </AuthProvider>
     </BrowserRouter>
