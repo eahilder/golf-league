@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Trophy, Target, Hash, TrendingUp, UserPlus, Check, Users, Loader2 } from 'lucide-react';
+import { Trophy, Target, Hash, TrendingUp, UserPlus, Check, Users, Loader2, RefreshCw, Download } from 'lucide-react';
 import { AppPage } from '@/components/AppPage';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useUpdater } from '@/hooks/useUpdater';
 import type { Profile, League } from '@/types/database';
 
 interface Stats {
@@ -33,6 +34,7 @@ export function ProfileScreen() {
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const { update, installing, checking, checked, checkNow, installUpdate } = useUpdater();
 
   useEffect(() => { if (targetId) fetchData(); }, [targetId, myProfile]);
 
@@ -266,6 +268,34 @@ export function ProfileScreen() {
         {isOwnProfile && (
           <>
             <div className="divider" />
+
+            {/* Check for Updates */}
+            <div className="card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-white">App Updates</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                    {update
+                      ? `Version ${update.version} available`
+                      : checked && !update
+                      ? 'You\'re up to date'
+                      : 'Check for the latest version'}
+                  </p>
+                </div>
+                {update ? (
+                  <button onClick={installUpdate} disabled={installing} className="btn btn-primary gap-2">
+                    {installing ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                    {installing ? 'Installing…' : 'Install'}
+                  </button>
+                ) : (
+                  <button onClick={checkNow} disabled={checking} className="btn btn-secondary gap-2">
+                    <RefreshCw size={14} className={checking ? 'animate-spin' : ''} />
+                    {checking ? 'Checking…' : 'Check'}
+                  </button>
+                )}
+              </div>
+            </div>
+
             <button onClick={signOut} className="btn btn-danger w-full">Sign Out</button>
           </>
         )}
