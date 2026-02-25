@@ -1,6 +1,6 @@
 [package]
 name = "golf-league"
-version = "0.1.6"
+version = "0.1.7"
 description = "The Clubhouse - Golf League Manager"
 authors = ["you"]
 license = ""

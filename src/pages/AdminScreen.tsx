@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Loader2, Plus, Edit2, Check, X, Users, Trophy, Zap } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Loader2, Plus, Edit2, Check, X, Users, Trophy, Zap, Trash2 } from 'lucide-react';
 import { AppPage } from '@/components/AppPage';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -11,6 +11,7 @@ import type { League, Season, Team, Profile, Handicap } from '@/types/database';
 export function AdminScreen() {
   const { leagueId } = useParams<{ leagueId: string }>();
   const { profile } = useAuth();
+  const navigate = useNavigate();
 
   const [league, setLeague] = useState<League | null>(null);
   const [season, setSeason] = useState<Season | null>(null);
@@ -29,6 +30,11 @@ export function AdminScreen() {
   const [editingTeamHandicap, setEditingTeamHandicap] = useState<string | null>(null);
   const [teamHandicapInput, setTeamHandicapInput] = useState('');
   const [savingTeamHandicap, setSavingTeamHandicap] = useState(false);
+
+  // Delete league
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
+  const [deletingLeague, setDeletingLeague] = useState(false);
 
   // New team
   const [newTeamName, setNewTeamName] = useState('');
@@ -182,6 +188,13 @@ export function AdminScreen() {
     setTeams(prev => prev.filter(t => t.id !== teamId));
   };
 
+  const deleteLeague = async () => {
+    if (!leagueId) return;
+    setDeletingLeague(true);
+    await supabase.from('leagues').delete().eq('id', leagueId);
+    navigate('/dashboard');
+  };
+
 
   if (loading) return <AppPage title="Admin"><div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}</div></AppPage>;
   if (!league) return <AppPage title="Admin"><p className="text-[var(--color-text-muted)]">League not found.</p></AppPage>;
@@ -332,7 +345,58 @@ export function AdminScreen() {
             )}
           </div>
         )}
+        {/* Danger Zone */}
+        <div className="card p-4 space-y-3 border border-[var(--color-error)]/20">
+          <h3 className="font-display font-bold uppercase tracking-wider text-[var(--color-error)] flex items-center gap-2 text-sm">
+            <Trash2 size={15} /> Danger Zone
+          </h3>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="btn w-full border border-[var(--color-error)]/40 text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors"
+          >
+            Delete League
+          </button>
+        </div>
+
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }}>
+          <div className="w-full max-w-sm bg-[var(--color-surface)] rounded-2xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[var(--color-error)]/15 flex items-center justify-center shrink-0">
+                <Trash2 size={20} className="text-[var(--color-error)]" />
+              </div>
+              <div>
+                <h2 className="font-display font-black text-white">Delete League</h2>
+                <p className="text-xs text-[var(--color-text-muted)]">This cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              All seasons, rounds, scores, and standings will be permanently deleted. Type <strong className="text-white">{league?.name}</strong> to confirm.
+            </p>
+            <input
+              className="input w-full"
+              placeholder={league?.name}
+              value={deleteInput}
+              onChange={e => setDeleteInput(e.target.value)}
+            />
+            <div className="flex gap-3">
+              <button onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }} className="btn btn-secondary flex-1">
+                Cancel
+              </button>
+              <button
+                onClick={deleteLeague}
+                disabled={deleteInput !== league?.name || deletingLeague}
+                className="btn flex-1 bg-[var(--color-error)] text-white disabled:opacity-40"
+              >
+                {deletingLeague ? <Loader2 size={16} className="animate-spin" /> : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppPage>
   );
 }
