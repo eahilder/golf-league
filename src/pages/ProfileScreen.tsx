@@ -34,7 +34,7 @@ export function ProfileScreen() {
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const { update, installing, checking, checked, checkNow, installUpdate } = useUpdater();
+  const { update, installing, checking, checked, checkError, checkNow, installUpdate } = useUpdater();
 
   useEffect(() => { if (targetId) fetchData(); }, [targetId, myProfile]);
 
@@ -277,6 +277,8 @@ export function ProfileScreen() {
                   <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                     {update
                       ? `Version ${update.version} available`
+                      : checkError
+                      ? 'Check failed — try again'
                       : checked && !update
                       ? 'You\'re up to date'
                       : 'Check for the latest version'}

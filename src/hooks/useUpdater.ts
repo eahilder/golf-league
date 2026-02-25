@@ -7,6 +7,7 @@ export function useUpdater() {
   const [installing, setInstalling] = useState(false);
   const [checking, setChecking] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [checkError, setCheckError] = useState(false);
 
   useEffect(() => {
     // Check once on startup, silently ignore errors (offline, dev mode, etc.)
@@ -16,12 +17,13 @@ export function useUpdater() {
   const checkNow = async () => {
     setChecking(true);
     setChecked(false);
+    setCheckError(false);
     try {
       const u = await check();
       if (u?.available) setUpdate(u);
       else setUpdate(null);
     } catch {
-      // ignore
+      setCheckError(true);
     } finally {
       setChecking(false);
       setChecked(true);
@@ -40,5 +42,5 @@ export function useUpdater() {
     }
   };
 
-  return { update, installing, checking, checked, checkNow, installUpdate, dismiss: () => setUpdate(null) };
+  return { update, installing, checking, checked, checkError, checkNow, installUpdate, dismiss: () => setUpdate(null) };
 }
