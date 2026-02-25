@@ -586,10 +586,10 @@ export function RoundScreen() {
                   {entry.scorecardUrl && (
                     <button
                       onClick={() => setViewingScorecard(entry.scorecardUrl!)}
-                      className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
+                      className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-primary)] transition-colors"
                       title="View scorecard"
                     >
-                      <Camera size={14} />
+                      <Camera size={17} />
                     </button>
                   )}
                   {league.format === 'singles' && entry.netScore !== null ? (
