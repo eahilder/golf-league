@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Settings, Copy, Check, ChevronRight, Trophy, Users, Flag, UserPlus, X, Loader2 } from 'lucide-react';
+import { Settings, Copy, Check, ChevronRight, Trophy, Users, Flag, UserPlus, X, Loader2, LogOut } from 'lucide-react';
 import { AppPage } from '@/components/AppPage';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -37,6 +37,9 @@ export function LeagueHubScreen() {
   const [friends, setFriends] = useState<FriendForInvite[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [sendingInvite, setSendingInvite] = useState<string | null>(null);
+
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [leavingLeague, setLeavingLeague] = useState(false);
 
   useEffect(() => {
     if (leagueId) fetchData();
@@ -177,6 +180,32 @@ export function LeagueHubScreen() {
     });
     setFriends(prev => prev.map(f => f.id === friendId ? { ...f, inviteStatus: 'pending' } : f));
     setSendingInvite(null);
+  };
+
+  const leaveLeague = async () => {
+    if (!profile || !leagueId || !league) return;
+    setLeavingLeague(true);
+    try {
+      // For scramble: remove from team first — DB trigger handles empty-team cleanup
+      if (league.format !== 'singles') {
+        const { data: teams } = await supabase.from('teams').select('id').eq('league_id', leagueId);
+        const teamIds = (teams || []).map((t: { id: string }) => t.id);
+        if (teamIds.length > 0) {
+          await supabase.from('team_members').delete()
+            .eq('user_id', profile.id)
+            .in('team_id', teamIds);
+        }
+      }
+      // Remove from league — DB trigger cleans up any active round score
+      await supabase.from('league_members').delete()
+        .eq('league_id', leagueId)
+        .eq('user_id', profile.id);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Leave league error:', err);
+      setLeavingLeague(false);
+      setShowLeaveConfirm(false);
+    }
   };
 
   if (loading) return (
@@ -342,7 +371,45 @@ export function LeagueHubScreen() {
             </button>
           </div>
         </div>
+
+        {/* Leave League */}
+        {!isOwner && (
+          <button
+            onClick={() => setShowLeaveConfirm(true)}
+            className="btn btn-danger w-full gap-2"
+          >
+            <LogOut size={16} />
+            Leave League
+          </button>
+        )}
       </div>
+
+      {/* Leave League Confirmation */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowLeaveConfirm(false)}>
+          <div className="w-full max-w-sm bg-[var(--color-surface)] rounded-2xl p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[var(--color-error)]/15 flex items-center justify-center flex-shrink-0">
+                <LogOut size={20} className="text-[var(--color-error)]" />
+              </div>
+              <div>
+                <h2 className="font-display text-lg font-black text-white">Leave League?</h2>
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{league.name}</p>
+              </div>
+            </div>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              You'll lose your spot and any score you submitted for an active round will be removed. You can rejoin with the invite code.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowLeaveConfirm(false)} className="btn btn-secondary flex-1">Cancel</button>
+              <button onClick={leaveLeague} disabled={leavingLeague} className="btn btn-danger flex-1 gap-2">
+                {leavingLeague ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
+                {leavingLeague ? 'Leaving…' : 'Leave'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Invite Friends Modal */}
       {showInviteModal && (
